@@ -17,6 +17,7 @@ The project relies on [ChromeDriver](https://chromedriver.chromium.org/downloads
 This project uses [Poetry](https://python-poetry.org/) for dependency management. After cloning the repository, install the dependencies using ` poetry install`. For VSCode, you can also add the environment to the project using and then installing the dependencies:
 
 ```bash
+src pdfigcapx
 poetry config virtualenvs.in-project true
 peotry install
 ```
