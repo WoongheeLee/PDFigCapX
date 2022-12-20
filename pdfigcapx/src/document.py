@@ -1,8 +1,9 @@
 import logging
 from os import listdir, makedirs
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Union
 from math import floor, ceil
+from json import dumps as json_dumps
 from shutil import rmtree
 from matplotlib.pyplot import subplots, savefig, close as plt_close
 from PIL import Image as PILImage
@@ -18,14 +19,20 @@ from src.layout import LayoutBuilder
 
 
 def valid_file(filename: str):
+    """Helper to filter only html files from pdf2html and not the index.html"""
     return filename.endswith(".html") and filename.startswith("page")
 
 
 def valid_image(filename: str):
+    """Helper to filter PNG images"""
     return filename.endswith(".png") and not filename.startswith(".")
 
 
 class Document:
+    """Represents a PDF document with every associated HTML page, figures,
+    captions and bounding boxes
+    """
+
     def __init__(
         self,
         pdf_path: str,
@@ -50,6 +57,7 @@ class Document:
         self.expand_captions()
 
     def transform_pdf(self) -> None:
+        """Converts the PDF to HTML using xpdf"""
         if not self.xpdf_base_path.exists():
             makedirs(self.xpdf_base_path)
 
@@ -64,6 +72,7 @@ class Document:
             self.xpdf_path = Path(out_path)
 
     def fetch_pages(self) -> None:
+        """Parses the HTML pages using chromedriver to estimate sizes"""
         names = [name for name in listdir(self.xpdf_path) if valid_file(name)]
         browser = launch_chromedriver()
 
@@ -73,16 +82,17 @@ class Document:
                 page_path = (self.xpdf_path / page_name).resolve()
                 page = extract_page_text_content(browser, page_path)
                 pages.append(page)
-        except Exception as e:
+        except Exception as error:
             logging.error("Error parsing pages", exc_info=True)
-            raise Exception(e)
+            raise Exception(error) from error
         finally:
             if browser:
                 browser.quit()
         self.pages = sorted(pages, key=lambda x: x.number)
 
     def _log_no_captions_found(self):
-        logging.info(f"{self.doc_name}: no captions found")
+        message = f"%s{self.doc_name}: no captions found"
+        logging.info(message)
 
     def expand_captions(self):
         """Grab the starting caption, iterate over the text boxes not
@@ -93,7 +103,7 @@ class Document:
             page.expand_captions(self.layout)
         total_captions = sum([len(page.captions) for page in self.pages])
         if total_captions == 0:
-            self._log_no_captions_found
+            self._log_no_captions_found()
 
     def extract_figures(self, min_orphan_size=1000) -> None:
         """Traverse the pages in order and extract every figure by matching captions.
@@ -133,12 +143,13 @@ class Document:
                         page.figures.append(figure)
 
     def _log_captions_without_candidates(self, page):
-        logging.info(f"{self.doc_name} - pg.{page.number}: captions have no candidates")
+        message = f"{self.doc_name} - pg.{page.number}: captions have no candidates"
+        logging.info(message)
 
     def _log_remaining_orphans_not_match(self, page):
-        logging.info(
-            f"{self.doc_name} - pg.{page.number}: remaining orphans not matched with any caption"
-        )
+        # pylint: disable-next=line-too-long
+        message = f"{self.doc_name} - pg.{page.number}: remaining orphans not matched with any caption"
+        logging.info(message)
 
     def _match_across_pages(
         self,
@@ -184,6 +195,7 @@ class Document:
         figr=True,
         save=False,
     ) -> None:
+        """Draw the extracted content for all pages on a canvas for debugging purposes"""
         n_rows = ceil(len(self.pages) / n_cols)
         fig, ax = subplots(n_rows, n_cols, dpi=300)
 
@@ -230,7 +242,7 @@ class Document:
         makedirs(output_folder, exist_ok=True)
         utils.pdf2images(self.pdf_path.resolve(), output_folder.resolve(), dpi=dpi)
         filenames = listdir(output_folder)
-        image_names = [x for x in filenames if valid_image]
+        image_names = [x for x in filenames if valid_image(x)]
         image_names = utils.natural_sort(image_names)
         images = []
         for image_name in image_names:
@@ -240,9 +252,15 @@ class Document:
         rmtree(output_folder)
         return images
 
-    def save_images(self, dpi=300, prefix=None):
-        pil_images = self._fetch_pages_as_images(dpi)
+    def _fig_name(self, prefix: Union[str, None], page: HtmlPage, fig_idx: int) -> str:
+        """naming convention for saving figure data"""
         str_prefix = "" if not prefix else f"{prefix}_"
+        name = f"{str_prefix}{page.number}_{fig_idx+1}.jpg"
+        return name
+
+    def save_images(self, dpi=300, prefix=None):
+        """Save extracted images to disk"""
+        pil_images = self._fetch_pages_as_images(dpi)
         for page, pil_image in zip(self.pages, pil_images):
             scale = float(pil_image.size[0]) / self.layout.width
 
@@ -254,12 +272,42 @@ class Document:
                     fig.bbox.y1 * scale,
                 ]
                 extracted_fig = pil_image.crop(crop_box)
-                fig_name = f"{str_prefix}{page.number}_{idx+1}.jpg"
+                fig_name = self._fig_name(prefix, page, idx)
                 fig_path = self.data_path / fig_name
                 extracted_fig.save(fig_path)
                 extracted_fig.close()
 
+    def export_metadata(self, prefix: None):
+        """Export extracted metadata to disk"""
+        export_content = {
+            "name": self.doc_name,
+            "xpdf_content_path": str(self.xpdf_base_path),
+            "width": self.layout.width,
+            "height": self.layout.height,
+            "pages": [],
+        }
+
+        for page in self.pages:
+            if len(page.figures) > 0:
+                page_content = {"number": page.number, "figures": []}
+                for fig_idx, figure in enumerate(page.figures):
+                    page_content["figures"].append(
+                        {
+                            "bbox": figure.bbox.to_arr(),
+                            "caption": figure.caption.text if figure.caption else "",
+                            "name": figure.identifier,
+                            "id": self._fig_name(prefix, page, fig_idx),
+                        }
+                    )
+                export_content["pages"].append(page_content)
+
+        export_json = json_dumps(export_content, indent=2)
+        output_path = self.data_path / f"{self.doc_name}.json"
+        with open(output_path, "w", encoding="utf-8") as outfile:
+            outfile.write(export_json)
+
     def debug_candidates(self, n_cols=10):
+        """Plot the extracted contours detected from graphical content"""
         n_rows = ceil(len(self.pages) / n_cols)
         fig, ax = subplots(n_rows, n_cols, dpi=300)
         pages = []
@@ -288,6 +336,7 @@ class Document:
             ax[row][col].set_title(f"pg.{page.number}")
             ax[row][col].axis("off")
 
+        # TODO: do i need to close the fig to avoid memory leaking?
         for idx in range(len(self.pages), n_rows * n_cols):
             col = idx % n_cols
             row = int(idx / n_cols)
