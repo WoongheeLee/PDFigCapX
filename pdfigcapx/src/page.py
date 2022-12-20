@@ -1,6 +1,6 @@
-from typing import List, Tuple
-from src.models import TextBox, Layout, AlignmentType
 from copy import deepcopy
+from typing import List
+from src.models import TextBox, Layout, AlignmentType, Figure
 
 
 class HtmlPage:
@@ -39,7 +39,7 @@ class HtmlPage:
         self.number = number
         self.text_boxes = text_boxes
         self.captions = captions
-        self.figures = []
+        self.figures: List[Figure] = []
         self.orphan_captions = []
         self.orphan_figure = None
 
