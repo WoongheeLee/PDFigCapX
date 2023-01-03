@@ -12,13 +12,19 @@ poetry run python src/batch_processing.py /home/jtt/Documents/datasets/gxd /home
 
 
 def process_pdf(pdf_path: str, xpdf_path: str, data_path: str):
+    error_path = Path(data_path) / "failed.log"
+    document_name = Path(pdf_path).stem
+
     try:
         print(pdf_path)
         document = Document(pdf_path, xpdf_path, data_path, include_first_page=False)
         document.extract_figures()
-        document.draw(n_cols=6, txtr=True, save=True)
+        document.export_metadata(prefix=document_name)
+        document.draw(n_cols=10, txtr=True, save=True)
     except Exception as e:
         logging.error(f"{pdf_path}:", exc_info=True)
+        with open(error_path, "a") as f:
+            f.write(f"{document_name}\n")
         print(pdf_path, e)
 
 
