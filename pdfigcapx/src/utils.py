@@ -178,3 +178,14 @@ def overlap_ratio_based(box1: Bbox, box2: Bbox) -> float:
     else:
         overlap_ratio = float(SI) / box1_area
     return overlap_ratio
+
+
+def batch(iterable, n=256):
+    """Create an iterable to process a long list in batches.
+    Needed to process the data in batches and guarantee that we are not filling
+    the memory with the data from processes that were already finished.
+    """
+    # https://stackoverflow.com/questions/8290397/how-to-split-an-iterable-in-constant-size-chunks
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx : min(ndx + n, l)]
