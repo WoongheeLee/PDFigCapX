@@ -27,7 +27,7 @@ poetry install
 
 ## 2. Usage
 
-## 2.1 Process every PDF inside a folder
+## 2.1 Process all PDFs in a folder
 
 Process every PDF and create a folder per PDF with the images and captions inside `OUTPUT_FOLDER`:
 
@@ -44,7 +44,16 @@ Optional parameters:
   on a previous run
 - --logs_path: If not specified, uses the `OUTPUT_FOLDER`
 
-## 2.2 Outputs
+## 2.2 Process PDFs where each is inside its own folder
+
+The outputs are placed inside the input PDF folder.
+
+```bash
+cd pdfigcapx
+poetry run python src/extract_from_folders.py INPUT_FOLDER ARTIFACTS_FOLDER --num_workers 10
+```
+
+## 2.3 Outputs
 
 For every PDF the script generates:
 

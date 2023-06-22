@@ -1,6 +1,7 @@
 """ Batch processing for cases when there is one PDF document per folder"""
 
-from os import argv, cpu_count
+from os import cpu_count
+from sys import argv
 from typing import List
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
@@ -8,6 +9,7 @@ import logging
 import multiprocessing
 from src.utils import batch
 from src.document import Document
+
 
 def setup_logger(workspace: str):
     """configure logger"""
@@ -22,7 +24,9 @@ def setup_logger(workspace: str):
         level=logging.INFO,
     )
 
+
 def parse_args(args) -> Namespace:
+    """Read command line arguments"""
     parser = ArgumentParser(
         prog="pdffigcapx",
         description="batch processing one folder one doc",
@@ -34,6 +38,7 @@ def parse_args(args) -> Namespace:
 
     return parsed_args
 
+
 def folder_exists(folder: Path):
     input_folder = Path(folder)
     if not input_folder.exists():
@@ -41,8 +46,9 @@ def folder_exists(folder: Path):
         logging.error(message)
         raise Exception(message)
 
+
 def validate_inputs(args: Namespace) -> List[Path]:
-    """ Validate inpurt arguments.
+    """Validate inpurt arguments.
     - Input and artifacts folders should exist
     - There should be only one PDF per folder, if not ignore those
     """
@@ -50,18 +56,23 @@ def validate_inputs(args: Namespace) -> List[Path]:
     artifacts_folder = Path(args.xpdf_path)
     folder_exists(input_folder)
     folder_exists(artifacts_folder)
-        
-    folders = [elem for elem in input_folder.iterdir() if elem.is_dir() and not elem.name.startswith(".")]
+
+    folders = [
+        elem
+        for elem in input_folder.iterdir()
+        if elem.is_dir() and not elem.name.startswith(".")
+    ]
     folders_to_ignore = []
     for folder in folders:
         pdfs = [elem for elem in folder.iterdir() if elem.suffix.lower() == ".pdf"]
-        if  len(pdfs) == 0:
-            logging.info("%s,NO_PDF",folder.name)
+        if len(pdfs) == 0:
+            logging.info("%s,NO_PDF", folder.name)
             folders_to_ignore.append(folder)
         if len(pdfs) > 1:
-            logging.info("%s,MORE_THAN_ONE_PDF",folder.name)
+            logging.info("%s,MORE_THAN_ONE_PDF", folder.name)
             folders_to_ignore.append(folder)
     return list(set(folders).difference(set(folders_to_ignore)))
+
 
 def process_pdf(pdf_path: Path, xpdf_path: Path):
     """Process each PDF and extract data to data directory.
@@ -108,6 +119,7 @@ def process_pdf(pdf_path: Path, xpdf_path: Path):
 
 
 def main():
+    """Entry point"""
     args = parse_args(argv[1:])
     folders = validate_inputs(args)
     num_workers = args.num_workers if args.num_workers < cpu_count() else cpu_count()

@@ -21,13 +21,13 @@ reprocessing a PDF can re-read these artifacts and avoid re-creating them. We
 recommend to set a temporary location for these elements.
 """
 
-
+from sys import argv
 import logging
 from typing import List
 from argparse import Namespace
 import argparse
 import multiprocessing
-from os import listdir, makedirs
+from os import listdir, makedirs, cpu_count
 from pathlib import Path
 from src.document import Document
 
@@ -124,7 +124,7 @@ def batch(iterable, n_items=256):
         yield iterable[ndx : min(ndx + n_items, l_items)]
 
 
-def parse_args():
+def parse_args(args) -> Namespace:
     """Read command line arguments"""
     parser = argparse.ArgumentParser(
         prog="pdffigcapx",
@@ -144,7 +144,7 @@ def parse_args():
         "--reprocess-errors", dest="reprocess_errors", action="store_true"
     )
     parser.set_defaults(reprocess_errors=False)
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
 def setup_logging(args: Namespace, level=logging.INFO) -> Path:
@@ -167,7 +167,10 @@ def setup_logging(args: Namespace, level=logging.INFO) -> Path:
 
 if __name__ == "__main__":
     # Process every PDF inside an input folder
-    cmd_args = parse_args()
+    cmd_args = parse_args(argv[1:])
+    num_workers = (
+        cmd_args.num_workers if cmd_args.num_workers < cpu_count() else cpu_count()
+    )
     input_folder = Path(cmd_args.inputs_path)
     if not input_folder.exists():
         raise FileNotFoundError(f"Input folder {input_folder} does not exist")
