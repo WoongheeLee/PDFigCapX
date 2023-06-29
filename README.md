@@ -42,7 +42,7 @@ We provide two scripts to batch process input PDFs based on the inputs configura
 
 ```bash
 cd pdfigcapx
-poetry run python src/run_folder_mode.py INPUT_FOLDER ARTIFACTS_FOLDER --logs_path LOGS_PATH --num_workers 6 --batch_size 256 --debug
+poetry run python pdfigcapx/run_folder_mode.py INPUT_FOLDER ARTIFACTS_FOLDER --logs_path LOGS_PATH --num_workers 6 --batch_size 256 --debug
 ```
 
 Parameters:
@@ -60,7 +60,7 @@ Process every PDF and create a folder per PDF with the images and captions insid
 
 ```bash
 cd pdfigcapx
-poetry run python src/run_basket_mode.py INPUT_FOLDER ARTIFACTS_FOLDER OUTPUT_FOLDER --logs_path LOGS_FOLDER --num_workers 10
+poetry run python pdfigcapx/run_basket_mode.py INPUT_FOLDER ARTIFACTS_FOLDER OUTPUT_FOLDER --logs_path LOGS_FOLDER --num_workers 10
 ```
 
 Optional parameters:
