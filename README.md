@@ -25,6 +25,12 @@ cd pdfigcapx
 poetry install
 ```
 
+### 1.3 Install the pip package
+
+```bash
+pip install "git+https://github.com/jtrells/PDFigCapX.git#egg=pdfigcapx"
+```
+
 ## 2. Usage
 
 We provide two scripts to batch process input PDFs based on the inputs configuration:
