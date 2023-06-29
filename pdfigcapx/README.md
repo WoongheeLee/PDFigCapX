@@ -36,7 +36,7 @@ We provide two scripts to batch process input PDFs based on the inputs configura
 
 ```bash
 cd pdfigcapx
-poetry run python src/extract_from_folders.py INPUT_FOLDER ARTIFACTS_FOLDER --logs_path LOGS_PATH --num_workers 6 --batch_size 256
+poetry run python src/run_folder_mode.py INPUT_FOLDER ARTIFACTS_FOLDER --logs_path LOGS_PATH --num_workers 6 --batch_size 256 --debug
 ```
 
 Parameters:
@@ -46,6 +46,7 @@ Parameters:
 - logs_path (optional): path to store logs, if not provided, uses INPUT_FOLDER
 - num_workers (optional): number of processors to allocate
 - batch_size (optional): number of processes to allocate in the pool per batch
+- debug (optional): create an image with all bounding boxes for debugging
 
 ### 2.2 Run in `INPUT_BASKET` mode
 
@@ -53,7 +54,7 @@ Process every PDF and create a folder per PDF with the images and captions insid
 
 ```bash
 cd pdfigcapx
-poetry run python src/batch_processing.py INPUT_FOLDER ARTIFACTS_FOLDER OUTPUT_FOLDER --logs_path LOGS_FOLDER --num_workers 10
+poetry run python src/run_basket_mode.py INPUT_FOLDER ARTIFACTS_FOLDER OUTPUT_FOLDER --logs_path LOGS_FOLDER --num_workers 10
 ```
 
 Optional parameters:

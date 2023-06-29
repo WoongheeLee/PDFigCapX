@@ -15,6 +15,7 @@ from src.document import Document
 
 ERROR_NO_PDF = "NO_PDF"
 ERROR_MORE_THAN_ONE_PDF = "MORE_THAN_ONE_PDF"
+FAILED_LOG = "pdfigcapx_failed.log"
 
 
 def process_pdf(
@@ -23,7 +24,7 @@ def process_pdf(
     data_path: str,
     logs_path: str,
     create_folder: bool = False,
-    debug=True,
+    debug: bool = True,
 ) -> None:
     """Process each PDF and extract data to data directory.
     Identifies the layout and extracts the figures per page. For bookkeeping, if
@@ -41,7 +42,7 @@ def process_pdf(
     - data_path: str
         Full path to folder where to save the extracted images and metadata information
     """
-    error_processing_path = Path(logs_path) / "pdfigcapx_failed.log"
+    error_processing_path = Path(logs_path) / FAILED_LOG
     error_export_path = Path(logs_path) / "pdfigcapx_failed_export.log"
     error_draw_path = Path(logs_path) / "pdfigcapx_failed_draw.log"
     success_path = Path(logs_path) / "pdfigcapx_success.log"
@@ -152,17 +153,68 @@ def filter_folder_input(inputs_dir: str) -> List[Path]:
     return valid_pdf_paths
 
 
+def filter_basket_input(
+    inputs_dir: str, logs_path: str, reprocess_errors: bool
+) -> List[Path]:
+    """When importing in BASKET_MODE, filter out any PDFs to avoid reprocessing
+    TODO: not considering the case when a document in the log gets processed and
+    needs to be removed from that list
+    """
+    in_path = Path(inputs_dir)
+    if not in_path.exists():
+        logging.error("input directory does not exist")
+        raise FileNotFoundError(in_path)
+
+    error_processing_path = Path(logs_path) / FAILED_LOG
+    in_pdfs = [el for el in in_path.iterdir() if el.suffix.lower() == ".pdf"]
+
+    if not reprocess_errors and error_processing_path.exists():
+        with open(error_processing_path, "r", encoding="utf-8") as f_in:
+            failed_ids = f_in.readlines()
+        failed_ids = [x.strip() for x in failed_ids]
+
+        set_failed_ids = set(failed_ids)
+        set_ids = set(in_pdfs)
+        difference = set_ids.difference(set_failed_ids)
+        in_pdfs = list(difference)
+    return [in_path / pdf for pdf in in_pdfs]
+
+
 def process_in_folder_mode(
     pdf_paths: List[Path],
     artifacts_path: Path,
     logs_path: Path,
     batch_size: int = 256,
     num_workers: int = 6,
+    debug: bool = False,
 ) -> None:
     """Process the list of PDFs in batches to avoid overload the system with
     OS forks."""
     in_tuples = [
-        (pdf_path, artifacts_path, pdf_path.parent, logs_path) for pdf_path in pdf_paths
+        (pdf_path, artifacts_path, pdf_path.parent, logs_path, False, debug)
+        for pdf_path in pdf_paths
+    ]
+
+    for data_batch in batch(in_tuples, n=batch_size):
+        with multiprocessing.Pool(num_workers) as pool:
+            pool.starmap(process_pdf, data_batch)
+
+
+def process_in_basket_mode(
+    pdf_paths: List[Path],
+    artifacts_path: Path,
+    outputs_path: Path,
+    logs_path: Path,
+    create_folder: bool,
+    batch_size: int = 256,
+    num_workers: int = 6,
+    debug: bool = False,
+) -> None:
+    """Process the list of PDFs in batches to avoid overload the system with
+    OS forks."""
+    in_tuples = [
+        (pdf_path, artifacts_path, outputs_path, logs_path, create_folder, debug)
+        for pdf_path in pdf_paths
     ]
 
     for data_batch in batch(in_tuples, n=batch_size):

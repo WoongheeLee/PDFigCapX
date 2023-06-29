@@ -28,6 +28,8 @@ def parse_args(args) -> Namespace:
     parser.add_argument("--logs_path", type=str, default=None)
     parser.add_argument("--num_workers", "-w", type=int, default=6)
     parser.add_argument("--batch_size", type=int, default=256)
+    parser.add_argument("--debug", dest="debug", action="store_true")
+    parser.set_defaults(debug=False)
     parsed_args = parser.parse_args(args)
     return parsed_args
 
@@ -40,12 +42,17 @@ def main():
         target_logs_dir=args.logs_path,
         level=logging.INFO,
     )
-    num_workers = args.num_workers if args.num_workers < cpu_count() else cpu_count()
+    if args.num_workers > cpu_count():
+        args.num_workers = cpu_count()
+
+    pdf_paths = bp.filter_folder_input(args.input_path)
     artifacts_path = bp.check_artifacts_folder(args.xpdf_path)
-    pdf_paths = bp.filter_folder_input(args)
-    bp.process_in_folder_mode(
-        pdf_paths, artifacts_path, logs_path, args.batch_size, num_workers
-    )
+    opts = {
+        "num_workers": args.num_workers,
+        "batch_size": args.batch_size,
+        "debug": args.debug,
+    }
+    bp.process_in_folder_mode(pdf_paths, artifacts_path, logs_path, **opts)
 
 
 if __name__ == "__main__":
