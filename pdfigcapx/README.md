@@ -1,4 +1,4 @@
-# PdfFigCapx
+# PdfFigCapX
 
 Python3 implementation of Li et al. [_Figure and caption extraction from biomedical documents_](https://academic.oup.com/bioinformatics/article/35/21/4381/5428177) (2018).
 PdfFigCapx extracts figures and captions from PDF documents, and returns the
@@ -27,7 +27,27 @@ poetry install
 
 ## 2. Usage
 
-## 2.1 Process all PDFs in a folder
+We provide two scripts to batch process input PDFs based on the inputs configuration:
+
+- `INPUT_FOLDER` mode: The input location contains folders where each folder includes a PDF document to process. The outputs are located inside each folder.
+- `INPUT_BASKET` mode: The input location contains the PDFs documents. You can configure where to store the outputs.
+
+### 2.1 Run in `INPUT_FOLDER` mode
+
+```bash
+cd pdfigcapx
+poetry run python src/extract_from_folders.py INPUT_FOLDER ARTIFACTS_FOLDER --logs_path LOGS_PATH --num_workers 6 --batch_size 256
+```
+
+Parameters:
+
+- INPUT_FOLDER: path to folder containing the folders to process
+- ARTIFACTS_FOLDER: path to folder for storing xpdf outputs
+- logs_path (optional): path to store logs, if not provided, uses INPUT_FOLDER
+- num_workers (optional): number of processors to allocate
+- batch_size (optional): number of processes to allocate in the pool per batch
+
+### 2.2 Run in `INPUT_BASKET` mode
 
 Process every PDF and create a folder per PDF with the images and captions inside `OUTPUT_FOLDER`:
 
@@ -38,20 +58,11 @@ poetry run python src/batch_processing.py INPUT_FOLDER ARTIFACTS_FOLDER OUTPUT_F
 
 Optional parameters:
 
-- --no-individual-folders: add to avoid creating one folder per PDF and instead
+- no-individual-folders: add to avoid creating one folder per PDF and instead
   add all the outputs to the `OUTPUT_FOLDER`
-- --reprocess-errors: add to reprocess any PDF that generated a processing error
+- reprocess-errors: add to reprocess any PDF that generated a processing error
   on a previous run
-- --logs_path: If not specified, uses the `OUTPUT_FOLDER`
-
-## 2.2 Process PDFs where each is inside its own folder
-
-The outputs are placed inside the input PDF folder.
-
-```bash
-cd pdfigcapx
-poetry run python src/extract_from_folders.py INPUT_FOLDER ARTIFACTS_FOLDER --num_workers 10
-```
+- logs_path: If not specified, uses the `OUTPUT_FOLDER`
 
 ## 2.3 Outputs
 
