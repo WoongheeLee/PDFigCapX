@@ -78,8 +78,9 @@ def pdf2html(file_path: str, output_base_path: str, new_folder_name: str) -> str
 def launch_chromedriver() -> webdriver.Chrome:
     """Start chromedriver in headless mode"""
     chrome_options = Options()
+    chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--headless")
-    # chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-gpu")
     # service = Service(executable_path=ChromeDriverManager().install())
     service = Service(executable_path="/usr/bin/chromedriver")
     driver = webdriver.Chrome(service=service, options=chrome_options)
