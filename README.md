@@ -71,6 +71,23 @@ Optional parameters:
   on a previous run
 - logs_path: If not specified, uses the `OUTPUT_FOLDER`
 
+### 2.3 Run in Docker
+
+The Dockfile uses an ubuntu image with Python 3.10 and installs every pre-requisite.
+To install the image use:
+
+```bash
+docker build -t pdfigcapx:0.1.0 .
+docker run -ti --rm -v INPUT_FOLDER:/mnt pdfigcapx:0.1.0 /bin/bash
+# inside docker
+cd /workspace/PDFigCapX
+# run script as shown in 2.1 or 2.2
+```
+
+The Dockerfile has hardcoded the latest chromedriver and xpdf tools available
+at the moment of this commit. However, check whether there are more recent versions
+available and update the Dockerfile accordingly.
+
 ## 2.3 Outputs
 
 For every PDF the script generates:
