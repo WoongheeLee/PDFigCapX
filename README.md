@@ -4,7 +4,8 @@ Python3 implementation of Li et al. [_Figure and caption extraction from biomedi
 PdfFigCapx extracts figures and captions from PDF documents, and returns the
 extracted content and associated metadata.
 
-## 1. Installation
+## 1. Installation 
+Check 2.3 in case you want to use Docker and skip step 1.
 
 ### 1.1 Pre-requisites
 
