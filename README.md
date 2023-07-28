@@ -89,7 +89,7 @@ The Dockerfile has hardcoded the latest chromedriver and xpdf tools available
 at the moment of this commit. However, check whether there are more recent versions
 available and update the Dockerfile accordingly.
 
-## 2.3 Outputs
+## 2.4 Outputs
 
 For every PDF the script generates:
 
