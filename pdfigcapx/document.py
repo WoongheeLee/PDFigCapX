@@ -294,7 +294,7 @@ class Document:
     #             extracted_fig.close()
 
     # 몇 퍼 더 키운거
-    def save_images(self, dpi=300, prefix=None, scale_percentage=3.5):
+    def save_images(self, dpi=300, prefix=None, scale_percentage=5):
         """Save extracted images to disk"""
         pil_images = self._fetch_pages_as_images(dpi)
         for page, pil_image in zip(self.pages, pil_images):
