@@ -63,21 +63,32 @@ class Document:
 
     def transform_pdf(self) -> None:
         """Converts the PDF to HTML using xpdf"""
+        # print('START: transform_pdf')
         if not self.xpdf_base_path.exists():
             makedirs(self.xpdf_base_path)
+        # print('self.xpdf_base_path', self.xpdf_base_path)
 
         prefixed_name = f"xpdf_{self.doc_name}"
         self.xpdf_path = self.xpdf_base_path / prefixed_name
+        # print('self.xpdf_path', self.xpdf_path)
         if self.xpdf_path.exists():
             logging.debug(f"attempting to reuse xpdf content {self.xpdf_path}")
         else:
+            print('self.xpdf_path not exists')
+            print('self.pdf_path.resolve()', self.pdf_path.resolve())
+            print('self.xpdf_base_path.resolve()', self.xpdf_base_path.resolve())
+            print('prefixed_name', prefixed_name)
             out_path = pdf2html(
                 self.pdf_path.resolve(), self.xpdf_base_path.resolve(), prefixed_name
             )
+            # print('out_path', out_path)
             self.xpdf_path = Path(out_path)
+            # print('self.xpdf_path', self.xpdf_path)
 
     def fetch_pages(self) -> None:
         """Parses the HTML pages using chromedriver to estimate sizes"""
+        # print('START: fetch_pages')
+        # print('self.xpdf_path', self.xpdf_path)
         names = [name for name in listdir(self.xpdf_path) if valid_file(name)]
         browser = launch_chromedriver()
 
@@ -262,19 +273,56 @@ class Document:
         name = f"{str_prefix}{page.number}_{fig_idx+1}.jpg"
         return name
 
-    def save_images(self, dpi=300, prefix=None):
+    # 원래 코드
+    # def save_images(self, dpi=300, prefix=None):
+    #     """Save extracted images to disk"""
+    #     pil_images = self._fetch_pages_as_images(dpi)
+    #     for page, pil_image in zip(self.pages, pil_images):
+    #         scale = float(pil_image.size[0]) / self.layout.width
+
+    #         for idx, fig in enumerate(page.figures):
+    #             crop_box = [
+    #                 fig.bbox.x * scale,
+    #                 fig.bbox.y * scale,
+    #                 fig.bbox.x1 * scale,
+    #                 fig.bbox.y1 * scale,
+    #             ]
+    #             extracted_fig = pil_image.crop(crop_box)
+    #             fig_name = self._fig_name(prefix, page, idx)
+    #             fig_path = self.data_path / fig_name
+    #             extracted_fig.save(fig_path)
+    #             extracted_fig.close()
+
+    # 몇 퍼 더 키운거
+    def save_images(self, dpi=300, prefix=None, scale_percentage=3.5):
         """Save extracted images to disk"""
         pil_images = self._fetch_pages_as_images(dpi)
         for page, pil_image in zip(self.pages, pil_images):
             scale = float(pil_image.size[0]) / self.layout.width
 
             for idx, fig in enumerate(page.figures):
+                # 원래 좌표
+                x0 = fig.bbox.x * scale
+                y0 = fig.bbox.y * scale
+                x1 = fig.bbox.x1 * scale
+                y1 = fig.bbox.y1 * scale
+
+                # 너비 높이
+                width = x1 - x0
+                height = y1 - y0
+
+                # 비율 계산
+                delta_w = width * (scale_percentage / 100.)
+                delta_h = height * (scale_percentage / 100.)
+
+                # 조정 좌표
                 crop_box = [
-                    fig.bbox.x * scale,
-                    fig.bbox.y * scale,
-                    fig.bbox.x1 * scale,
-                    fig.bbox.y1 * scale,
+                    x0 - delta_w,
+                    y0 - delta_h,
+                    x1 + delta_w,
+                    y1 + delta_h,
                 ]
+
                 extracted_fig = pil_image.crop(crop_box)
                 fig_name = self._fig_name(prefix, page, idx)
                 fig_path = self.data_path / fig_name
